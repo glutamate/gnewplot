@@ -1,0 +1,9 @@
+*.hi
+*.o
+*~
+*.bak
+dist/*
+*.prof
+*.exe
+*.hc
+*.hp
