@@ -53,15 +53,13 @@ histListFixed t1 t2 dt vls = let nbins = round $ (t2-t1)/dt
                              in elems hArr
 
 
-data Histo where
-    Histo :: Int -> [(a,Double)] -> Histo 
-
+data Histo = Histo Int [Double]
                    
 instance PlotWithGnuplot Histo where
     getGnuplotCmd (Histo _ []) = return []
     getGnuplotCmd (Histo n vls) = do
             fnm <- ("/tmp/gnuplothist"++) `fmap` uniqueIntStr
-            writeHist fnm n $ map snd vls
+            writeHist fnm n vls
             return [PL (concat ["\"", fnm, "\" using 1:2"]) 
                        "" 
                        "boxes" 
