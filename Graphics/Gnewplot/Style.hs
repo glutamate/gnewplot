@@ -34,6 +34,13 @@ styleOptsToString = intercalate " " . map g
           g (PointType lt) = "pt "++show lt
           g (PointSize lt) = "ps "++show lt
 
+newtype RightAxis a = RightAxis a
+
+
+instance PlotWithGnuplot a => PlotWithGnuplot (RightAxis a) where
+    multiPlot r (RightAxis x) = do
+      px <- multiPlot r x
+      return $ map (\(r', pls) -> (r', addData (" axis x1y2") pls)) px
 
 
 instance PlotWithGnuplot a => PlotWithGnuplot (Lines a) where

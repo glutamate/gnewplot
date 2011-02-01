@@ -36,6 +36,12 @@ setWith sty = map f
     where f pl@(PL _ _ _ _) = pl {plotWith = sty }
           f tlcmd = tlcmd
 
+addData :: String -> GnuplotCmd -> GnuplotCmd
+addData s = map f
+    where f pl@(PL _ _ _ _) = pl {plotData = plotData pl++s }
+          f tlcmd = tlcmd
+
+
 showPlotCmd :: GnuplotCmd -> String
 showPlotCmd [] = ""
 showPlotCmd [TopLevelGnuplotCmd s s2] = s ++ "\n"++ s2
