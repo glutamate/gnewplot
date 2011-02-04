@@ -85,7 +85,7 @@ instance PlotWithGnuplot Noplot where
                              TopLevelGnuplotCmd "unset border; unset tics" "set border; set tics"]
 
 instance PlotWithGnuplot GnuplotBox where
-    getGnuplotCmd (GnuplotBox x) = getGnuplotCmd x
+    multiPlot r (GnuplotBox x) = multiPlot r x
 
 instance PlotWithGnuplot [GnuplotBox] where
     getGnuplotCmd xs = concat `fmap` mapM getGnuplotCmd xs
