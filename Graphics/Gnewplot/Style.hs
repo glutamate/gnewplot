@@ -1,3 +1,21 @@
+{- | Graphics.Gnewplot.Style contain constructors that wrap plottable
+things to modify their display style in individual panels. Example:
+
+@
+import Graphics.Gnewplot.Instances
+import Graphics.Gnewplot.Exec
+
+someData :: [(Double,Double)]
+somedata = [(0.0, 1.0),(0.1, 2.0),(0.2, 1.4),(0.3, 1.7),(0.4, 1.0),
+            (0.5, 1.8),(0.6, 1.1),(0.7, 1.5),(0.8, 1.2),(0.9, 1.9)]
+
+main = do 
+  gnuplotOnScreen $ Lines [LineWidth 1.5, LineColor \"blue\"] someData
+  gnuplotOnScreen $ XScaleBar (0.1, 1.1) (0.1,\"100 nm\") 0.2 $ NoAxes $ someData
+@
+
+-}
+
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances, ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators, FlexibleContexts, GADTs, ScopedTypeVariables, DeriveDataTypeable #-}
 
@@ -12,12 +30,8 @@ import Graphics.Gnewplot.Types
 
 --newtype Lines a = Lines {unLines :: a }
 --newtype Dashed a = Dashed {unDashed :: a }
-newtype Boxes a = Boxes {unBoxes :: a }
 
-data Lines a = Lines [StyleOpt] a
-data LinesPoints a = LinesPoints [StyleOpt] a
-data Points a = Points [StyleOpt] a
-
+-- | Options for modifying styles. Plot GnuplotTest to see styles for markers and lines.
 data StyleOpt = LineWidth Double 
               | LineType Int
               | LineStyle Int
@@ -34,13 +48,25 @@ styleOptsToString = intercalate " " . map g
           g (PointType lt) = "pt "++show lt
           g (PointSize lt) = "ps "++show lt
 
+-- | Place the vertical axis on the right
 newtype RightAxis a = RightAxis a
-
 
 instance PlotWithGnuplot a => PlotWithGnuplot (RightAxis a) where
     multiPlot r (RightAxis x) = do
       px <- multiPlot r x
       return $ map (\(r', pls) -> (r', addData (" axis x1y2") pls)) px
+
+-- | Plot with boxes
+newtype Boxes a = Boxes {unBoxes :: a }
+
+-- | Plot with lines
+data Lines a = Lines [StyleOpt] a
+
+-- | Plot with markers
+data Points a = Points [StyleOpt] a
+
+-- | Plot with lines and markers
+data LinesPoints a = LinesPoints [StyleOpt] a
 
 
 instance PlotWithGnuplot a => PlotWithGnuplot (Lines a) where
@@ -67,11 +93,16 @@ instance PlotWithGnuplot a => PlotWithGnuplot (Boxes a) where
       px <- multiPlot r x
       return $ map (\(r', pls) -> (r', setWith "boxes" pls)) px
 
-
+-- | Set the horizontal range
 data XRange a = XRange Double Double a
+
+-- | Set the vertical range
 data YRange a = YRange Double Double a
 
+-- | Place horizontal ticks manually
 data XTics a = XTics [Double] a
+
+-- | Place vertical ticks manually
 data YTics a = YTics [Double] a
 
 data TicFormat a = TicFormat XY String a 
@@ -83,7 +114,7 @@ data Noaxis a = Noaxis a
               | NoYaxis a
               | NoTRaxis a
 
-
+-- | Locate the key (legend) somewhere else than the default location
 data Key a = KeyTopLeft Bool a 
            | KeyTopRight Bool a 
 
@@ -150,6 +181,8 @@ lineType t = Lines [LineType t]
 pointSize t = Points [PointSize t]
 pointType t = Points [PointType t]
 
+
+
 data CustAxis = CustAxis {
       caOrigin :: (Double,Double),
       caLength :: Double,
@@ -177,14 +210,18 @@ instance PlotWithGnuplot a => PlotWithGnuplot (WithAxis a) where
       px <- multiPlot r $ x
       return $ map (\(r', pls) -> (r', cmds++pls)) px
 
-
+-- | draw a scale bar with custom location, length, text and separation between the bar and the text
 data ScaleBars a = ScaleBars (Double, Double) (Double,String) (Double,String) a
                  | XScaleBar (Double, Double) (Double,String) Double a
                  | YScaleBar (Double, Double) (Double,String) Double a
 
+-- | Draw a line somewhere on the graph
 data LineAt a = LineAt (Double, Double) (Double, Double) a
+
+-- | Draw an arrow somewhere on the graph
 data ArrowAt a = ArrowAt (Double, Double) (Double, Double) a
 
+-- | place some text somewhere on the graph
 data TextAt a = TextAt (Double, Double) String a
               | TextAtLeft (Double, Double) String a
               | TextAtRot (Double,Double) String a
@@ -243,7 +280,7 @@ instance PlotWithGnuplot a => PlotWithGnuplot (TicFont a) where
       return $ map (\(r', pls) -> (r', mklab:pls)) px
 
 
-
+-- | place a piece of text in the middle of the graph
 data CentreLabel = CentreLabel String
 
 instance PlotWithGnuplot CentreLabel where
@@ -254,6 +291,7 @@ instance PlotWithGnuplot CentreLabel where
       return [(r, mklab:concat nop)]
 
 
+-- | set axis labels
 data AxisLabels a = AxisLabels String String a
                   | XLabel String a
                   | YLabel String a
@@ -273,7 +311,7 @@ instance PlotWithGnuplot a => PlotWithGnuplot (AxisLabels a) where
       px <- multiPlot r x
       return $ map (\(r', pls) -> (r', mklabs++pls)) px
 
-
+-- | set the title of a plot
 instance PlotWithGnuplot a => PlotWithGnuplot (String, a) where
     multiPlot r (title, x) = do
       pls <- multiPlot r x

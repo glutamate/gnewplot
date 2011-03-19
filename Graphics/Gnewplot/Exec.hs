@@ -1,7 +1,31 @@
+-----------------------------------------------------------------------------
+{- |
+Graphics.Gnewplot.Exec allows you to plot values of types that implement PlotWithGnuplot in 
+various ways (to a file or on disk).
+
+Example: 
+
+@
+import Graphics.Gnewplot.Instances
+import Graphics.Gnewplot.Exec
+
+someData :: [(Double,Double)]
+somedata = [(0.0, 1.0),(0.1, 2.0),(0.2, 1.4),(0.3, 1.7),(0.4, 1.0),
+            (0.5, 1.8),(0.6, 1.1),(0.7, 1.5),(0.8, 1.2),(0.9, 1.9)]
+
+main = do 
+  gnuplotToPS \"foo.ps\" someData
+  gnuplotToPNG \"foo.png\" someData
+  gnuplotOnScreen someData
+@
+
+-}
+
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances, ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators, FlexibleContexts, GADTs, ScopedTypeVariables, DeriveDataTypeable #-}
 
-module Graphics.Gnewplot.Exec where
+module Graphics.Gnewplot.Exec(gnuplotOnScreen, gnuplotToPNG, gnuplotToPS, gnuplotToPDF, gnuplotToSparklinePNG, uniqueIntStr) where
+--module Graphics.Gnewplot.Exec where
 
 --import EvalM
 import System.IO
@@ -89,8 +113,11 @@ execGPTmp cmds = do
 
 execGP = execGPTmp
 
+-- | Generate a unique string
+uniqueIntStr :: IO String
 uniqueIntStr = (show. hashUnique) `fmap` newUnique
 
+-- | Plot to screen -- will open a new window
 gnuplotOnScreen :: PlotWithGnuplot a => a -> IO ()
 gnuplotOnScreen x = do
   plines <- multiPlot unitRect x
@@ -103,6 +130,7 @@ gnuplotOnScreen x = do
   cleanupCmds $ map snd plines
   return ()
 
+-- | Plot to a png file
 gnuplotToPNG :: PlotWithGnuplot a => String -> a -> IO ()
 gnuplotToPNG fp x = do
   plines <- multiPlot unitRect x
@@ -119,6 +147,7 @@ gnuplotToPNG fp x = do
   cleanupCmds $ map snd plines
   return ()
 
+-- | Plot to a very small (100 by 50 pixels) png file 
 gnuplotToSparklinePNG :: PlotWithGnuplot a => String -> a -> IO ()
 gnuplotToSparklinePNG fp x = do
   plines <- multiPlot unitRect x
@@ -137,12 +166,14 @@ gnuplotToSparklinePNG fp x = do
   cleanupCmds $ map snd plines
   return ()
 
+-- | Plot to PDF figure fire. Requires ps2pdf in the current path
 gnuplotToPDF:: PlotWithGnuplot a => String -> a -> IO ()
 gnuplotToPDF fp x = do
   gnuplotToPS fp x
   system $ "ps2pdf "++fp
   return ()
 
+-- | Plot to an encapsulated postscript file
 gnuplotToPS:: PlotWithGnuplot a => String-> a -> IO ()
 gnuplotToPS fp  x = do
   plines <- multiPlot unitRect x

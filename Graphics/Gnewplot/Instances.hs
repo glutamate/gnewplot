@@ -1,3 +1,16 @@
+{- |
+
+Predefined instances of PlotWithGnuplot for
+
+* @[(Double,Double)]@ Plot as points or lines, according to Graphics.Gnewplot.Style
+
+* @[((Double,Double),Double)]@ Plot durations as disconnected horizontal lines
+
+* @(Double->Double, (Double,Double))@ Plot arbitrary functions with maximum and minimum values
+
+* @TimeSeries@ Plot a timeseries with a step size, start time and a StorableVector of values.
+-}
+
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances, ExistentialQuantification #-}
 module Graphics.Gnewplot.Instances where
 
@@ -8,6 +21,8 @@ import Graphics.Gnewplot.Style
 import System.Directory
 import System.IO
 import Control.Monad
+import qualified Data.StorableVector as SV
+
 
 instance PlotWithGnuplot [(Double,Double)] where
     getGnuplotCmd [] = return []
@@ -41,3 +56,19 @@ instance PlotWithGnuplot (Double->Double, (Double,Double)) where
         let dx = (t2-t1)/1000 
             xs = map (\p-> p*dx+t1) [0..999] 
         in getGnuplotCmd $ Lines [LineStyle 0] $ zip xs $ map f xs
+
+data TimeSeries = TimeSeries { stepSize:: Double,
+                               startTime :: Double,
+                               tsValues ::(SV.Vector Double) }
+
+instance PlotWithGnuplot TimeSeries where
+    getGnuplotCmd (TimeSeries dt t1 vls) = do
+           fnm <- ("/tmp/gnuplotsig"++) `fmap` uniqueIntStr
+           h <- openBinaryFile fnm WriteMode
+           SV.hPut h vls
+           hClose h
+           return $ [PL (concat ["\"", fnm, "\" binary format=\"%float64\" using ($0*",
+                                    show dt, "+", show t1, "):1"] )
+                       "" -- (show t1++"->"++show t2) 
+                       "lines"
+                       (removeFile fnm)]
