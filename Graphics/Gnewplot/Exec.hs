@@ -107,7 +107,7 @@ gnuplotToPNG :: PlotWithGnuplot a => String -> a -> IO ()
 gnuplotToPNG fp x = do
   plines <- multiPlot unitRect x
   let cmdLines = "set datafile missing \"NaN\"\n"++
-                 "set terminal png\n"++
+                 "set terminal png size 1200,900 crop\n"++
                  "set output '"++fp++"'\n"++
                   (showMultiPlot plines)
                        
@@ -147,7 +147,7 @@ gnuplotToPS:: PlotWithGnuplot a => String-> a -> IO ()
 gnuplotToPS fp  x = do
   plines <- multiPlot unitRect x
   let cmdLines = "set datafile missing \"NaN\"\n"++
-                 "set terminal postscript eps enhanced color \"Helvetica\" 8\n"++
+                 "set terminal postscript eps enhanced color \"Helvetica\" 16 size 5.0,3.5\n"++
                  "set output '"++fp++"'\n"++
                   (showMultiPlot plines)
                        

@@ -13,7 +13,11 @@ infixr 3 :+:
 infixr 2 :|:
 infixr 1 :--:
 
+
+
 data a :+: b = a :+: b
+
+data ManySup a = ManySup [a]
 
 data a :||: b = a :||: b
 data a :|: b = PcntDiv a :|: PcntDiv b
@@ -135,6 +139,11 @@ instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot ( a :--: b) w
       px <- multiPlot ( Rect (x0,y0) (x1, ysep) ) q
       py <- multiPlot ( Rect (x0, ysep) (x1, y1) ) p
       return $ py++px 
+
+instance (PlotWithGnuplot a) => PlotWithGnuplot (ManySup a) where
+    multiPlot r (ManySup ps) = do
+      pxs <- mapM getGnuplotCmd ps
+      return $ [(r,concat pxs)]
 
 instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot (a :+: b) where
     multiPlot r (xs :+: ys) = do
