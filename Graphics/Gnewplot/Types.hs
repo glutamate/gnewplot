@@ -1,3 +1,9 @@
+{- | 
+
+Definitions of the PlotWithGnuplot class.
+
+-} 
+
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances, ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators, FlexibleContexts, GADTs, ScopedTypeVariables, DeriveDataTypeable #-}
 
@@ -6,16 +12,11 @@ module Graphics.Gnewplot.Types where
 import Control.Monad
 import Data.List
 
-
---import EvalM
-
 semiColonConcat = concat . intersperse "; "
 
 quote :: String -> String
 quote = show
                  
-
-
 type GnuplotCmd = [PlotLine]
 
 data PlotLine = PL {plotData :: String,
@@ -63,12 +64,13 @@ showMultiPlot rpls = "set multiplot\n" ++ concatMap pl rpls ++"\nunset multiplot
                                                         ",", show (y1-y0), "\n",
                                                         showPlotCmd plines]
                                                       
-
+-- | coordinates for a rectangle 
 data Rectangle = Rect (Double, Double) (Double,Double) deriving Show
 unitRect = Rect (0,0) (1,1)
 
 rectTopLeft (Rect (x1,y1) (x2,y2)) = (x1+0.035,y2-0.010) 
 
+-- | the main class - implement either getGnuplotCmd or muliplot
 class PlotWithGnuplot a where
     getGnuplotCmd :: a -> IO GnuplotCmd
     getGnuplotCmd a = (snd . head) `fmap` multiPlot unitRect a
@@ -76,13 +78,12 @@ class PlotWithGnuplot a where
     multiPlot :: Rectangle -> a -> IO [(Rectangle, GnuplotCmd)]
     multiPlot r a = (\x->[(r, x)]) `fmap` getGnuplotCmd a
 
+instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot (Either a b) where
+    multiPlot r (Left xs) = multiPlot r xs
+    multiPlot r (Right xs) = multiPlot r xs
+
+-- | An existential box for anythign plottable
 data GnuplotBox = forall a. PlotWithGnuplot a => GnuplotBox a
-
-data Noplot = Noplot
-
-instance PlotWithGnuplot Noplot where
-    getGnuplotCmd _ = return [PL "x" "" "lines lc rgb \"white\"" (return () ),
-                             TopLevelGnuplotCmd "unset border; unset tics" "set border; set tics"]
 
 instance PlotWithGnuplot GnuplotBox where
     multiPlot r (GnuplotBox x) = multiPlot r x
@@ -90,6 +91,15 @@ instance PlotWithGnuplot GnuplotBox where
 instance PlotWithGnuplot [GnuplotBox] where
     getGnuplotCmd xs = concat `fmap` mapM getGnuplotCmd xs
 
+
+-- | the empty (blank) plot
+data Noplot = Noplot
+
+instance PlotWithGnuplot Noplot where
+    getGnuplotCmd _ = return [PL "x" "" "lines lc rgb \"white\"" (return () ),
+                             TopLevelGnuplotCmd "unset border; unset tics" "set border; set tics"]
+
+-- | Gnuplot's test plot
 data GnuplotTest = GnuplotTest
 
 instance PlotWithGnuplot (GnuplotTest) where
