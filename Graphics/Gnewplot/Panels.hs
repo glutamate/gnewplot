@@ -75,34 +75,6 @@ data WithColour a = WithColour String a
 
 x % a = Pcnt x a
 
-instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot (a :||: b) where
-    multiPlot r (xs :||: ys) = multiPlot r (50% xs :|: 50% ys)
-
-instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot (a :==: b) where
-    multiPlot r (xs :==: ys) = multiPlot r (50% xs :--: 50% ys)
-
-
-instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot ( a :|: b) where
-    multiPlot (Rect (x0, y0) (x1,y1)) (Pcnt pcp p :|: Pcnt pcq q) = do
-      let xsep = x0+(pcp/(pcp+pcq))*(x1-x0)
-      px <- multiPlot ( Rect (x0,y0) (xsep, y1) ) p
-      py <- multiPlot ( Rect (xsep,y0) (x1, y1) ) q
-      return $ px++py 
-
-instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot ( a :--: b) where
-    multiPlot (Rect (x0, y0) (x1,y1)) (Pcnt pcp p :--: Pcnt pcq q) = do
-      let ysep = y0+(pcq/(pcp+pcq))*(y1-y0)
-      px <- multiPlot ( Rect (x0,y0) (x1, ysep) ) q
-      py <- multiPlot ( Rect (x0, ysep) (x1, y1) ) p
-      return $ py++px 
-
-instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot (a :+: b) where
-    multiPlot r (xs :+: ys) = do
-      px <- getGnuplotCmd xs
-      py <- getGnuplotCmd ys                          
-      return $ [(r,px++py)]
-
-
 -- | Add a label to the panel
 data SubLabel a = 
     A a | Ai a | Aii a | Aiii a
@@ -187,7 +159,6 @@ instance (PlotWithGnuplot a) => PlotWithGnuplot (Pad a) where
       px <- multiPlot ( Rect (x0,y0+yh*p1) (x1, y1-yh*p2) ) x
       return $ px
 
-<<<<<<< HEAD
 instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot (a :||: b) where
     multiPlot r (xs :||: ys) = multiPlot r (50% xs :|: 50% ys)
 
@@ -219,13 +190,6 @@ instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot (a :+: b) whe
       px <- getGnuplotCmd xs
       py <- getGnuplotCmd ys                          
       return $ [(r,px++py)]
-
-instance (PlotWithGnuplot a, PlotWithGnuplot b) => PlotWithGnuplot (Either a b) where
-    multiPlot r (Left xs) = multiPlot r xs
-    multiPlot r (Right xs) = multiPlot r xs
-
-=======
->>>>>>> 6207df2738fc8e2c6364d544cd3bba8cc41b52e6
 
 data Hplots a = Hplots [a]
 data Vplots a = Vplots [a]
