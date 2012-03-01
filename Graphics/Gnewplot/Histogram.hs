@@ -54,15 +54,18 @@ histListFixed t1 t2 dt vls = let nbins = round $ (t2-t1)/dt
 
 
 data Histo = Histo Int [Double]
+           | HistoStyle String Int [Double]
                    
 instance PlotWithGnuplot Histo where
     getGnuplotCmd (Histo _ []) = return []
-    getGnuplotCmd (Histo n vls) = do
+    getGnuplotCmd (HistoStyle _ _ []) = return []
+    getGnuplotCmd (Histo n vls) = getGnuplotCmd (HistoStyle "boxes" n vls)
+    getGnuplotCmd (HistoStyle sty n vls) = do
             fnm <- ("/tmp/gnuplothist"++) `fmap` uniqueIntStr
             writeHist fnm n vls
             return [PL (concat ["\"", fnm, "\" using 1:2"]) 
                        "" 
-                       "boxes" 
+                       sty 
                        (removeFile fnm)]
         where writeHist fp n vls = do
                    let (counts, lo, hi, binSize) = histList n vls

@@ -59,6 +59,10 @@ instance PlotWithGnuplot a => PlotWithGnuplot (RightAxis a) where
 -- | Plot with boxes
 newtype Boxes a = Boxes {unBoxes :: a }
 
+-- | Plot with boxes
+newtype HiSteps a = HiSteps {unHiSteps :: a }
+
+
 -- | Plot with lines
 data Lines a = Lines [StyleOpt] a
 
@@ -68,6 +72,8 @@ data Points a = Points [StyleOpt] a
 -- | Plot with lines and markers
 data LinesPoints a = LinesPoints [StyleOpt] a
 
+
+data LogScale a = LogScaleX a | LogScaleY a
 
 instance PlotWithGnuplot a => PlotWithGnuplot (Lines a) where
     multiPlot r (Lines sos x) = do
@@ -93,12 +99,18 @@ instance PlotWithGnuplot a => PlotWithGnuplot (Boxes a) where
       px <- multiPlot r x
       return $ map (\(r', pls) -> (r', setWith "boxes" pls)) px
 
+instance PlotWithGnuplot a => PlotWithGnuplot (HiSteps a) where
+    multiPlot r (HiSteps x) = do
+      px <- multiPlot r x
+      return $ map (\(r', pls) -> (r', setWith "histeps" pls)) px
+
+
 -- | Set the horizontal range
 data XRange a = XRange Double Double a
-
+            
 -- | Set the vertical range
 data YRange a = YRange Double Double a
-
+              | YFromZero a
 -- | Place horizontal ticks manually
 data XTics a = XTics [Double] a
 
@@ -141,6 +153,17 @@ instance PlotWithGnuplot a => PlotWithGnuplot (Key a) where
       let setit = "set key top left "++boxs++"\n"
       return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set key default"):pls)) px
 
+instance PlotWithGnuplot a => PlotWithGnuplot (LogScale a) where
+    multiPlot r m@(LogScaleX x) = do
+      px <- multiPlot r x
+      let cmd = TopLevelGnuplotCmd "set logscale x;" "set nologscale x"
+      return $ map (\(r', pls) -> (r', cmd:pls)) px
+    multiPlot r m@(LogScaleY x) = do
+      px <- multiPlot r x
+      let cmd = TopLevelGnuplotCmd "set logscale y;" "set nologscale y"
+      return $ map (\(r', pls) -> (r', cmd:pls)) px
+
+
 instance PlotWithGnuplot a => PlotWithGnuplot (Noaxis a) where
     multiPlot r m@(Noaxis x) = do
       px <- multiPlot r x
@@ -149,6 +172,10 @@ instance PlotWithGnuplot a => PlotWithGnuplot (Noaxis a) where
     multiPlot r m@(NoYaxis x) = do
       px <- multiPlot r x
       let cmd = TopLevelGnuplotCmd "set border 1; set tics" "set border; set tics"
+      return $ map (\(r', pls) -> (r', cmd:pls)) px
+    multiPlot r m@(NoXaxis x) = do
+      px <- multiPlot r x
+      let cmd = TopLevelGnuplotCmd "set border 2; set tics" "set border; set tics"
       return $ map (\(r', pls) -> (r', cmd:pls)) px
     multiPlot r m@(NoTRaxis x) = do
       px <- multiPlot r x
@@ -173,6 +200,10 @@ instance PlotWithGnuplot a => PlotWithGnuplot (YRange a) where
     multiPlot r m@(YRange lo hi x) = do
       px <- multiPlot r x
       let setit = "set yrange ["++show lo++":"++show hi++"]\n"
+      return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set yrange [*:*]"):pls)) px
+    multiPlot r m@(YFromZero x) = do
+      px <- multiPlot r x
+      let setit = "set yrange [0:*]\n"
       return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set yrange [*:*]"):pls)) px
 
 
