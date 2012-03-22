@@ -24,7 +24,7 @@ main = do
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances, ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators, FlexibleContexts, GADTs, ScopedTypeVariables, DeriveDataTypeable #-}
 
-module Graphics.Gnewplot.Exec(gnuplotOnScreen, gnuplotToPNG, gnuplotToPS, gnuplotToPDF, gnuplotToSparklinePNG, uniqueIntStr, execGP) where
+module Graphics.Gnewplot.Exec(gnuplotOnScreen, gnuplotToPNG, gnuplotToPS, gnuplotToPDF, gnuplotToSparklinePNG, uniqueIntStr, execGP, gnuplotToPNGOpts, TermOpts (FontSpec, SizeSpec)) where
 --module Graphics.Gnewplot.Exec where
 
 --import EvalM
@@ -135,7 +135,32 @@ gnuplotToPNG :: PlotWithGnuplot a => String -> a -> IO ()
 gnuplotToPNG fp x = do
   plines <- multiPlot unitRect x
   let cmdLines = "set datafile missing \"NaN\"\n"++
-                 "set terminal png size 1200,900 crop\n"++
+                 "set terminal png enhanced size 1200,900 crop\n"++
+                 "set output '"++fp++"'\n"++
+                  (showMultiPlot plines)
+                       
+  --putStrLn cmdLines
+  execGP cmdLines
+  {- writeFile "/tmp/gnuplotCmds" cmdLines
+  system "gnuplot /tmp/gnuplotCmds"
+  removeFile "/tmp/gnuplotCmds" -}
+  cleanupCmds $ map snd plines
+  return ()
+
+data TermOpts = FontSpec String
+              | SizeSpec String
+
+gnuplotToPNGOpts :: PlotWithGnuplot a => String -> [TermOpts] -> a -> IO ()
+gnuplotToPNGOpts fp opts x = do
+  plines <- multiPlot unitRect x
+  let fontstr = case [spec | FontSpec spec <- opts ] of
+                  [] -> ""
+                  s:_ -> "font \""++s++"\" "
+  let szstr = case [spec | SizeSpec spec <- opts ] of
+                  [] -> ""
+                  s:_ -> "size \""++s++"\" "
+  let cmdLines = "set datafile missing \"NaN\"\n"++
+                 "set terminal png enhanced "++fontstr++szstr ++" crop\n"++
                  "set output '"++fp++"'\n"++
                   (showMultiPlot plines)
                        
