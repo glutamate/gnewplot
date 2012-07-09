@@ -112,7 +112,7 @@ data XRange a = XRange Double Double a
 data YRange a = YRange Double Double a
               | YFromZero a
 -- | Place horizontal ticks manually
-data XTics a = XTics [Double] a
+data XTics a = XTics [Double] a | XTicLabel [(String, Double)] a
 
 -- | Place vertical ticks manually
 data YTics a = YTics [Double] a
@@ -186,6 +186,11 @@ instance PlotWithGnuplot a => PlotWithGnuplot (XTics a) where
     multiPlot r m@(XTics tics x) = do
       px <- multiPlot r x
       let setit = "set xtics "++ (intercalate ", " $ map show tics) ++"\n"
+      return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set xtics autofreq"):pls)) px
+    multiPlot r m@(XTicLabel tics x) = do
+      px <- multiPlot r x
+      let showTic (lab, loc) = show lab++" "++show loc
+      let setit = "set xtics ("++ (intercalate ", " $ map showTic tics) ++")\n"
       return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set xtics autofreq"):pls)) px
 
 
@@ -348,4 +353,5 @@ instance PlotWithGnuplot a => PlotWithGnuplot (String, a) where
       pls <- multiPlot r x
       return $ map (\(r', plines) -> (r' ,map (addTitle title) plines)) pls
       where addTitle title (PL x _ y clean) = PL x title y clean
+            addTitle _ x = x
 

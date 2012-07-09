@@ -81,7 +81,8 @@ data SubLabel a =
   | B a | Bi a | Bii a | Biii a
   | C a | Ci a | Cii a | Ciii a
   | D a | Di a | Dii a | Diii a
-  | E a | F a | G a 
+  | E a | Ei a | Eii a | Eiii a
+  | F a | G a 
   | SubNum Int a
 
 subLabSplit :: SubLabel a -> (String, a)
