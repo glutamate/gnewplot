@@ -158,7 +158,7 @@ gnuplotToPNGOpts fp opts x = do
                   s:_ -> "font \""++s++"\" "
   let szstr = case [spec | SizeSpec spec <- opts ] of
                   [] -> ""
-                  s:_ -> "size \""++s++"\" "
+                  s:_ -> "size "++s++" "
   let cmdLines = "set datafile missing \"NaN\"\n"++
                  "set terminal png enhanced "++fontstr++szstr ++" crop\n"++
                  "set output '"++fp++"'\n"++
