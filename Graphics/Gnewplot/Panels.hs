@@ -82,7 +82,8 @@ data SubLabel a =
   | C a | Ci a | Cii a | Ciii a
   | D a | Di a | Dii a | Diii a
   | E a | Ei a | Eii a | Eiii a
-  | F a | G a 
+  | F a | Fi a | Fii a | Fiii a
+  | G a 
   | SubNum Int a
 
 subLabSplit :: SubLabel a -> (String, a)
@@ -103,7 +104,13 @@ subLabSplit (Di x) = ("Di",x)
 subLabSplit (Dii x) = ("Dii",x)
 subLabSplit (Diii x) = ("Diii",x)
 subLabSplit (E x) = ("E",x)
+subLabSplit (Ei x) = ("Ei",x)
+subLabSplit (Eii x) = ("Eii",x)
+subLabSplit (Eiii x) = ("Eiii",x)
 subLabSplit (F x) = ("F",x)
+subLabSplit (Fi x) = ("Fi",x)
+subLabSplit (Fii x) = ("Fii",x)
+subLabSplit (Fiii x) = ("Fiii",x)
 subLabSplit (G x) = ("G",x)
 subLabSplit (SubNum n x) = (show n, x)
 
