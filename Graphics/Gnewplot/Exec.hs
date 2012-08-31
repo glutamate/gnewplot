@@ -24,7 +24,7 @@ main = do
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances, ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators, FlexibleContexts, GADTs, ScopedTypeVariables, DeriveDataTypeable #-}
 
-module Graphics.Gnewplot.Exec(gnuplotOnScreen, gnuplotToPNG, gnuplotToPS, gnuplotToPDF, gnuplotToSparklinePNG, uniqueIntStr, execGP, gnuplotToPNGOpts, TermOpts (FontSpec, SizeSpec)) where
+module Graphics.Gnewplot.Exec(gnuplotOnScreen, gnuplotToPNG, gnuplotToCanvas, gnuplotToPS, gnuplotToPDF, gnuplotToSparklinePNG, uniqueIntStr, execGP, gnuplotToPNGOpts, TermOpts (FontSpec, SizeSpec)) where
 --module Graphics.Gnewplot.Exec where
 
 --import EvalM
@@ -127,6 +127,24 @@ gnuplotOnScreen x = do
   writeFile "/tmp/gnuplotCmds" cmdLines
   system "gnuplot -persist /tmp/gnuplotCmds"
   --removeFile "/tmp/gnuplotCmds"
+  cleanupCmds $ map snd plines
+  return ()
+
+-- | Plot to canvas
+
+gnuplotToCanvas :: PlotWithGnuplot a => String -> a -> IO ()
+gnuplotToCanvas fp x = do
+  plines <- multiPlot unitRect x
+  let cmdLines = "set datafile missing \"NaN\"\n"++
+                 "set terminal canvas enhanced name '"++fp++"'\n"++
+                 "set output '"++fp++".js'\n"++
+                  (showMultiPlot plines)
+                       
+  --putStrLn cmdLines
+  execGP cmdLines
+  {- writeFile "/tmp/gnuplotCmds" cmdLines
+  system "gnuplot /tmp/gnuplotCmds"
+  removeFile "/tmp/gnuplotCmds" -}
   cleanupCmds $ map snd plines
   return ()
 
