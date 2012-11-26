@@ -23,14 +23,22 @@ data PlotLine = PL {plotData :: String,
                     plotTitle :: String,
                     plotWith :: String,
                     cleanUp :: IO () }
+              | SPL {plotData :: String,
+                    plotTitle :: String,
+                    plotWith :: String,
+                    cleanUp :: IO () }
               | TopLevelGnuplotCmd String String
 
 plOnly pls = [pl | pl@(PL _ _ _ _) <- pls]
+splOnly pls = [pl | pl@(SPL _ _ _ _) <- pls]
 tlOnlyUnset pls = [s2 | pl@(TopLevelGnuplotCmd s1 s2) <- pls]
 tlOnly pls = [s1 | pl@(TopLevelGnuplotCmd s1 s2) <- pls]
 
+hasPl pls = not $ null $ plOnly pls 
+hasSpl pls = not $ null $ splOnly pls 
+
 cleanupCmds :: [GnuplotCmd] -> IO ()
-cleanupCmds cmds = forM_ cmds $ \plines -> sequence_ $ map cleanUp $ plOnly plines
+cleanupCmds cmds = forM_ cmds $ \plines -> sequence_ $ map cleanUp $ plOnly plines ++ splOnly plines
 
 setWith :: String -> GnuplotCmd -> GnuplotCmd
 setWith sty = map f
@@ -46,14 +54,17 @@ addData s = map f
 showPlotCmd :: GnuplotCmd -> String
 showPlotCmd [] = ""
 showPlotCmd [TopLevelGnuplotCmd s s2] = s ++ "\n"++ s2
-showPlotCmd plines = tls++"\nplot "++(intercalate ", " $ map s $ plOnly $ plines)++"\n"++untls
-    where s (PL dat tit wth _) = dat++title tit++withStr wth
+showPlotCmd plines 
+ | hasPl plines = tls++"\nplot "++(intercalate ", " $ map p $ plOnly $ plines)++"\n"++untls
+ | hasSpl plines = tls++"\nsplot "++(intercalate ", " $ map s $ splOnly $ plines)++"\n"++untls
+    where s (SPL dat tit wth _) = dat++title tit++withStr wth
+          p (PL dat tit wth _) = dat++title tit++withStr wth
+          tls = unlines $ tlOnly plines
+          untls = unlines $ tlOnlyUnset plines
           title "" = " notitle"
           title tit = " title '"++tit++"'"
           withStr "" = ""
           withStr s = " with "++s 
-          tls = unlines $ tlOnly plines
-          untls = unlines $ tlOnlyUnset plines
 
 showMultiPlot :: [(Rectangle, GnuplotCmd)] -> String
 showMultiPlot rpls = "set multiplot\n" ++ concatMap pl rpls ++"\nunset multiplot\n"
