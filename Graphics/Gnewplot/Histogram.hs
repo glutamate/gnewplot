@@ -14,6 +14,8 @@ import System.IO
 import Graphics.Gnewplot.Types
 import Graphics.Gnewplot.Exec
 
+import Debug.Trace
+
 {- stolen from gnuplot-0.3.3 (Henning Thieleman) -}
 
 --histArr :: (Int,Int) -> [Double] -> UArray Int Double
@@ -33,9 +35,25 @@ histList nbins vls = let lo = foldl1' min vls
                          binSize = (hi-lo)/(realToFrac nbins+1)
                          ixs = map (\v-> floor $! (v-lo)/binSize ) vls
                          hArr = histArr (0,nbins-1) $ ixs
-                     in ((/num) `fmap` elems hArr, lo, hi, binSize)
+                         empiricalIntegral = sum $ map (*binSize) $ elems hArr
+                     in ((/empiricalIntegral) `fmap` elems hArr, lo, hi, binSize)
 
-histListBZ :: Double -> [Double] -> ([Double] , Double, Double, Double)
+histLogList :: Int -> [Double] -> [(Double, Double)]
+histLogList _ [] = []
+histLogList nbins vls = let lo = log $ foldl1' min vls
+                            hi = log $ foldl1' max vls
+                            num = realToFrac $ length vls
+                            binSize = (hi-lo)/(realToFrac nbins+1)
+                            ixs = map (\v-> floor $! (log v-lo)/binSize ) vls
+                            hArr = histArr (0,nbins-1) $ ixs
+                            binloc i = exp $ lo+(hi-lo) *(realToFrac i/realToFrac nbins)
+                           
+                            empiricalIntegral = sum $ map (\(i,freq) -> ((binloc i - binloc (i-1))*freq)) $ assocs hArr
+                            res = map (\(i,freq) -> (binloc i, freq/empiricalIntegral)) $ assocs hArr
+                        in trace ("ixs="++show (res)) $ trace ("bnds="++show (lo,hi)) 
+                           $ res
+
+{-histListBZ :: Double -> [Double] -> ([Double] , Double, Double, Double)
 histListBZ _ [] = ([], 0, 0, 1)
 histListBZ bz vls    = let lo = foldl1' min vls
                            hi = foldl1' max vls
@@ -50,11 +68,14 @@ histListFixed t1 t2 dt [] = take (round $ (t2-t1)/dt) $ repeat 0
 histListFixed t1 t2 dt vls = let nbins = round $ (t2-t1)/dt
                                  ixs = map (\v-> floor $! (v-t1)/dt ) vls
                                  hArr = histArr (0,nbins-1) $ ixs
-                             in elems hArr
+                             in elems hArr -}
 
 
 data Histo = Histo Int [Double]
            | HistoStyle String Int [Double]
+           | HistoLog String Int [Double]
+
+
                    
 instance PlotWithGnuplot Histo where
     getGnuplotCmd (Histo _ []) = return []
@@ -73,6 +94,20 @@ instance PlotWithGnuplot Histo where
                    --print (counts, lo, hi, binSize)
                    h <- openFile fp WriteMode
                    let dat = zip [lo, lo+binSize..hi] counts
+                   forM_  dat $ \(x,y)-> hPutStrLn h $ show x++"\t"++show y
+                   hClose h
+    getGnuplotCmd (HistoLog sty n vls) = do
+            fnm <- ("/tmp/gnuplothist"++) `fmap` uniqueIntStr
+            writeHist fnm n vls
+            return [PL (concat ["\"", fnm, "\" using 1:2"]) 
+                       "" 
+                       sty 
+                       (return ())] -- removeFile fnm)]
+        where writeHist fp n vls = do
+                   let dat = histLogList n vls
+                   --print n
+                   --print (counts, lo, hi, binSize)
+                   h <- openFile fp WriteMode
                    forM_  dat $ \(x,y)-> hPutStrLn h $ show x++"\t"++show y
                    hClose h
 

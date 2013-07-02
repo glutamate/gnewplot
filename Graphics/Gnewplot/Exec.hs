@@ -24,7 +24,7 @@ main = do
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances, ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators, FlexibleContexts, GADTs, ScopedTypeVariables, DeriveDataTypeable #-}
 
-module Graphics.Gnewplot.Exec(gnuplotOnScreen, gnuplotToPNG, gnuplotToPS, gnuplotToPDF, gnuplotToSparklinePNG, uniqueIntStr, execGP, gnuplotToPNGOpts, TermOpts (FontSpec, SizeSpec)) where
+module Graphics.Gnewplot.Exec(gnuplotOnScreen, gnuplotToPNG, gnuplotToPS, gnuplotToPDF, gnuplotToSparklinePNG, uniqueIntStr, execGP, gnuplotToPNGOpts, gnuplotToPSOpts, TermOpts (FontSpec, SizeSpec)) where
 --module Graphics.Gnewplot.Exec where
 
 --import EvalM
@@ -41,12 +41,14 @@ import System.Directory
 import System.Random
 
 import Graphics.Gnewplot.Types
-
+import Debug.Trace
 {- stolen from gnuplot-0.3.3 (Henning Thieleman) -}
 
 import qualified System.Process as Proc
 import Control.Concurrent
 import Control.Exception
+
+
 
 myForkIO :: IO () -> IO ()
 myForkIO io = do
@@ -108,7 +110,7 @@ execGPTmp cmds = do
   let fnm = "/tmp/gnuplotCmds"++show x
   writeFile fnm cmds
   system $ "gnuplot "++fnm
-  removeFile $ fnm
+  --removeFile $ fnm
 
 
 execGP = execGPTmp
@@ -172,6 +174,27 @@ gnuplotToPNGOpts fp opts x = do
   cleanupCmds $ map snd plines
   return ()
 
+
+gnuplotToPSOpts:: PlotWithGnuplot a => String-> [TermOpts] -> a -> IO ()
+gnuplotToPSOpts fp  opts x = do
+  plines <- multiPlot unitRect x
+  let fontstr = case [spec | FontSpec spec <- opts ] of
+                  [] -> "\"Helvetica\" 16 "
+                  s:_ -> s++" "
+  let szstr = case [spec | SizeSpec spec <- opts ] of
+                  [] -> "size 5.0,3.5"
+                  s:_ -> "size "++s++" "
+  let cmdLines = "set datafile missing \"NaN\"\n"++
+                 "set terminal postscript eps enhanced color "++fontstr++szstr ++"\n"++
+                 "set output '"++fp++"'\n"++
+                  (showMultiPlot plines)
+                       
+  execGP cmdLines
+{-  writeFile "/tmp/gnuplotCmds" cmdLines
+  system "gnuplot /tmp/gnuplotCmds"
+  removeFile "/tmp/gnuplotCmds"-}
+  cleanupCmds $ map snd plines
+  return ()
 -- | Plot to a very small (100 by 50 pixels) png file 
 gnuplotToSparklinePNG :: PlotWithGnuplot a => String -> a -> IO ()
 gnuplotToSparklinePNG fp x = do
@@ -207,7 +230,7 @@ gnuplotToPS fp  x = do
                  "set output '"++fp++"'\n"++
                   (showMultiPlot plines)
                        
-  execGP cmdLines
+  execGP $ trace (show plines) $ cmdLines
 {-  writeFile "/tmp/gnuplotCmds" cmdLines
   system "gnuplot /tmp/gnuplotCmds"
   removeFile "/tmp/gnuplotCmds"-}

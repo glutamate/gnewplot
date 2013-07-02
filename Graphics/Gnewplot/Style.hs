@@ -115,7 +115,7 @@ data YRange a = YRange Double Double a
 data XTics a = XTics [Double] a | XTicLabel [(String, Double)] a
 
 -- | Place vertical ticks manually
-data YTics a = YTics [Double] a
+data YTics a = YTics [Double] a | YTicLabel [(String, Double)] a
 
 data TicFormat a = TicFormat XY String a 
 
@@ -167,38 +167,43 @@ instance PlotWithGnuplot a => PlotWithGnuplot (LogScale a) where
 instance PlotWithGnuplot a => PlotWithGnuplot (Noaxis a) where
     multiPlot r m@(Noaxis x) = do
       px <- multiPlot r x
-      let cmd = TopLevelGnuplotCmd "unset border; unset tics" "set border; set tics"
+      let cmd = TopLevelGnuplotCmd "unset border; unset tics;" "set border; set tics"
       return $ map (\(r', pls) -> (r', cmd:pls)) px
     multiPlot r m@(NoYaxis x) = do
       px <- multiPlot r x
-      let cmd = TopLevelGnuplotCmd "set border 1; set tics" "set border; set tics"
+      let cmd = TopLevelGnuplotCmd "set border 1; set tics; set ytics nomirror; unset ytics; set xtics nomirror;" "set border; set tics;"
       return $ map (\(r', pls) -> (r', cmd:pls)) px
     multiPlot r m@(NoXaxis x) = do
       px <- multiPlot r x
-      let cmd = TopLevelGnuplotCmd "set border 2; set tics" "set border; set tics"
+      let cmd = TopLevelGnuplotCmd "set border 2; set tics; set xtics nomirror; unset xtics; set ytics nomirror;" "set border; set tics;"
       return $ map (\(r', pls) -> (r', cmd:pls)) px
     multiPlot r m@(NoTRaxis x) = do
       px <- multiPlot r x
-      let cmd = TopLevelGnuplotCmd "set border 3; set tics; set xtics nomirror; set ytics nomirror" "set border; set tics"
+      let cmd = TopLevelGnuplotCmd "set border 3; set tics; set xtics nomirror; set ytics nomirror;" "set border; set tics;"
       return $ map (\(r', pls) -> (r', cmd:pls)) px
 
 instance PlotWithGnuplot a => PlotWithGnuplot (XTics a) where
     multiPlot r m@(XTics tics x) = do
       px <- multiPlot r x
-      let setit = "set xtics "++ (intercalate ", " $ map show tics) ++"\n"
-      return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set xtics autofreq"):pls)) px
+      let setit = "set xtics "++ (intercalate ", " $ map show tics) ++";"
+      return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set xtics autofreq;"):pls)) px
     multiPlot r m@(XTicLabel tics x) = do
       px <- multiPlot r x
       let showTic (lab, loc) = show lab++" "++show loc
-      let setit = "set xtics ("++ (intercalate ", " $ map showTic tics) ++")\n"
-      return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set xtics autofreq"):pls)) px
+      let setit = "set xtics ("++ (intercalate ", " $ map showTic tics) ++");"
+      return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set xtics autofreq;"):pls)) px
 
 
 instance PlotWithGnuplot a => PlotWithGnuplot (YTics a) where
     multiPlot r m@(YTics tics x) = do
       px <- multiPlot r x
-      let setit = "set ytics "++ (intercalate ", " $ map show tics) ++"\n"
-      return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set xtics autofreq"):pls)) px
+      let setit = "set ytics "++ (intercalate ", " $ map show tics) ++";"
+      return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set ytics autofreq"):pls)) px
+    multiPlot r m@(YTicLabel tics x) = do
+      px <- multiPlot r x
+      let showTic (lab, loc) = show lab++" "++show loc
+      let setit = "set ytics ("++ (intercalate ", " $ map showTic tics) ++");"
+      return $ map (\(r', pls) -> (r', (TopLevelGnuplotCmd setit "set ytics autofreq;"):pls)) px
 
 
 instance PlotWithGnuplot a => PlotWithGnuplot (YRange a) where

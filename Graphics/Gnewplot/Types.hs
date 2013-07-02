@@ -25,6 +25,10 @@ data PlotLine = PL {plotData :: String,
                     cleanUp :: IO () }
               | TopLevelGnuplotCmd String String
 
+instance Show PlotLine where
+   show (PL d t w _ ) = "PL "++show d++" "++show t ++" "++show w
+   show (TopLevelGnuplotCmd a b) = "TopLevelGnuplotCmd "++ show a ++ " "++show b
+
 plOnly pls = [pl | pl@(PL _ _ _ _) <- pls]
 tlOnlyUnset pls = [s2 | pl@(TopLevelGnuplotCmd s1 s2) <- pls]
 tlOnly pls = [s1 | pl@(TopLevelGnuplotCmd s1 s2) <- pls]
