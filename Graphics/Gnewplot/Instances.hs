@@ -21,6 +21,7 @@ import Graphics.Gnewplot.Style
 import System.Directory
 import System.IO
 import Control.Monad
+import Data.List
 import qualified Data.StorableVector as SV
 
 
@@ -72,3 +73,15 @@ instance PlotWithGnuplot TimeSeries where
                        "" -- (show t1++"->"++show t2) 
                        "lines"
                        (removeFile fnm)]
+
+data Heatmap = Heatmap [[Double]]
+
+instance PlotWithGnuplot Heatmap where
+     getGnuplotCmd (Heatmap xss) = do
+         fnm <- ("/tmp/gnuplotheat"++) `fmap` uniqueIntStr
+         h <- openFile fnm WriteMode
+         forM_ xss $ \xs-> hPutStrLn h $ intercalate ", " (map show xs)
+         hClose h
+         return $ [SPL ("'"++fnm++"' matrix") "" "image" (removeFile fnm), 
+                   TopLevelGnuplotCmd "set view map" "unset view",
+                   TopLevelGnuplotCmd ("set xrange [-0.5:"++show (length (head xss)-1)++".5]") "unset xrange"]
